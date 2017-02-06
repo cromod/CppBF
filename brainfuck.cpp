@@ -1,5 +1,6 @@
 /* Brainfuck interpreter using interpreter and composite patterns :) */
 
+#include <exception>
 #include <iostream>
 #include <list>
 #include <deque>
@@ -54,7 +55,7 @@ class DecrementPtr: public AbstractExpression
     public:
         virtual void interpret(Data &data) {
             data.ptr--;
-            if(data.ptr<0) cerr<<"Negative value of pointer"<<endl;
+            if(data.ptr<0) throw out_of_range("Negative value of pointer");
         }
 };
 
@@ -78,7 +79,8 @@ class Input: public AbstractExpression
 
 class CompositeExpression: AbstractExpression
 {
-
+    private:
+        CompositeExpression() {}
     protected:
         map<char,AbstractExpression*> expMap;
         list<AbstractExpression*> expTree;
