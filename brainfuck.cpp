@@ -7,6 +7,7 @@
 #include <map>
 #include <string>
 #include <algorithm>
+#include <memory>
 
 using namespace std;
 
@@ -19,9 +20,11 @@ struct Data
 class AbstractExpression
 {
     public:
-        virtual void interpret(Data &data) = 0;
-        virtual void add(AbstractExpression * exp) {}
+        AbstractExpression() {}
+        virtual void interpret(Data &) = 0;
+        virtual void add(shared_ptr<AbstractExpression>) {}
         virtual bool isComposite() {return false;}
+	virtual void parse(const string &) {}
         virtual ~AbstractExpression() {}
 };
 
@@ -77,57 +80,54 @@ class Input: public AbstractExpression
         }
 };
 
-class CompositeExpression: AbstractExpression
+typedef shared_ptr<AbstractExpression> AbstractExpressionPtr;
+
+class CompositeExpression: public AbstractExpression
 {
-    private:
-        CompositeExpression() {}
     protected:
-        map<char,AbstractExpression*> expMap;
-        list<AbstractExpression*> expTree;
+        map<char, AbstractExpressionPtr> expMap;
+	deque<char> chars;
+        list<AbstractExpressionPtr> expTree;
     public:
-        CompositeExpression(string code): expTree() {
-            expMap['+'] = new IncrementByte;
-            expMap['-'] = new DecrementByte;
-            expMap['>'] = new IncrementPtr;
-            expMap['<'] = new DecrementPtr;
-            expMap['.'] = new Output;
-            expMap[','] = new Input;
-            
-            char chars[6] = {'+','-','>','<','.',','};
+        CompositeExpression(): expTree() {
+	    chars.push_back('+'); expMap[chars.back()] = AbstractExpressionPtr(new IncrementByte);
+            chars.push_back('-'); expMap[chars.back()] = AbstractExpressionPtr(new DecrementByte);
+            chars.push_back('>'); expMap[chars.back()] = AbstractExpressionPtr(new IncrementPtr);
+            chars.push_back('<'); expMap[chars.back()] = AbstractExpressionPtr(new DecrementPtr);
+            chars.push_back('.'); expMap[chars.back()] = AbstractExpressionPtr(new Output);
+            chars.push_back(','); expMap[chars.back()] = AbstractExpressionPtr(new Input);
+        }
+        
+        virtual ~CompositeExpression() {}
+        
+        virtual bool isComposite() {return true;}
+        
+        virtual void add(AbstractExpressionPtr exp) {expTree.push_back(exp);}
+
+        virtual void parse(const string & code) {
             int skip(0);
-            
             for(int i=0; i<code.size(); i++) {
                 if(skip) {
                     if(code[i] == '[') skip++;
                     if(code[i] == ']') skip--;
                     continue;
                 }
-                if(find(chars, chars+6, code[i]) != chars+6) {
+                if(find(chars.begin(), chars.end(), code[i]) != chars.end()) {
                     this->add(expMap[code[i]]);
                 }
                 else if (code[i] == '[') {
-                    this->add(new CompositeExpression(code.substr(i+1)));
+                    AbstractExpressionPtr expr(new CompositeExpression());
+                    expr->parse(code.substr(i+1));
+                    this->add(expr);
                     skip = 1;
                 }
                 else if(code[i]==']') break;
             }
         }
-        
-        virtual ~CompositeExpression() {
-            for(list<AbstractExpression*> ::iterator it=expTree.begin(); it!=expTree.end(); it++) {
-                if((*it)->isComposite()) delete (*it);
-            }
-            for(map<char,AbstractExpression*>::iterator it=expMap.begin(); it!=expMap.end(); it++)
-                delete (*it).second;
-        }
-        
-        virtual bool isComposite() {return true;}
-        
-        virtual void add(AbstractExpression * exp) {expTree.push_back(exp);}
-        
+
         virtual void interpret(Data &data)
         {
-            for(list<AbstractExpression*>::iterator it=expTree.begin(); it!=expTree.end(); it++) {
+            for(list<AbstractExpressionPtr>::iterator it=expTree.begin(); it!=expTree.end(); it++) {
                 if((*it)->isComposite()) {
                     while(data.array[data.ptr])
                         (*it)->interpret(data);
@@ -144,6 +144,7 @@ int main()
     Data data; data.array.assign(1,0); data.ptr = 0;
     string code("++++++++++[>+++++++>++++++++++>+++>+<<<<-]>++.>+.+++++++..+++.>++.<<+++++++++++++++.>.+++.------.--------.>+.>.");
     //string code(",[.[-],]");
-    CompositeExpression parser(code);
+    CompositeExpression parser;
+    parser.parse(code);
     parser.interpret(data);
 }
