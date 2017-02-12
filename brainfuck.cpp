@@ -21,11 +21,11 @@ class AbstractExpression
 {
     public:
         AbstractExpression() {}
-        virtual void interpret(Data &) = 0;
+        virtual ~AbstractExpression() {}
         virtual void add(shared_ptr<AbstractExpression>) {}
         virtual bool isComposite() {return false;}
-	virtual void parse(const string &) {}
-        virtual ~AbstractExpression() {}
+        virtual void interpret(Data &) = 0;
+        virtual void parse(const string &) {}
 };
 
 class IncrementByte: public AbstractExpression
@@ -86,11 +86,11 @@ class CompositeExpression: public AbstractExpression
 {
     protected:
         map<char, AbstractExpressionPtr> expMap;
-	deque<char> chars;
+        list<char> chars;
         list<AbstractExpressionPtr> expTree;
     public:
         CompositeExpression(): expTree() {
-	    chars.push_back('+'); expMap[chars.back()] = AbstractExpressionPtr(new IncrementByte);
+            chars.push_back('+'); expMap[chars.back()] = AbstractExpressionPtr(new IncrementByte);
             chars.push_back('-'); expMap[chars.back()] = AbstractExpressionPtr(new DecrementByte);
             chars.push_back('>'); expMap[chars.back()] = AbstractExpressionPtr(new IncrementPtr);
             chars.push_back('<'); expMap[chars.back()] = AbstractExpressionPtr(new DecrementPtr);
@@ -103,7 +103,7 @@ class CompositeExpression: public AbstractExpression
         virtual bool isComposite() {return true;}
         
         virtual void add(AbstractExpressionPtr exp) {expTree.push_back(exp);}
-
+        
         virtual void parse(const string & code) {
             int skip(0);
             for(int i=0; i<code.size(); i++) {
