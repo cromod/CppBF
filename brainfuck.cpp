@@ -3,7 +3,7 @@
 #include <exception>
 #include <iostream>
 #include <list>
-#include <deque>
+#include <vector>
 #include <map>
 #include <string>
 #include <algorithm>
@@ -13,7 +13,7 @@ using namespace std;
 
 struct Data
 {
-    deque<int> array;
+    vector<int> array;
     int ptr;
 };
 
