@@ -23,9 +23,7 @@ class AbstractExpression
         AbstractExpression() {}
         virtual ~AbstractExpression() {}
         virtual void add(shared_ptr<AbstractExpression>) {}
-        virtual bool isComposite() {return false;}
         virtual void interpret(Data &) = 0;
-        virtual void parse(const string &) {}
 };
 
 class IncrementByte: public AbstractExpression
@@ -84,26 +82,28 @@ typedef shared_ptr<AbstractExpression> AbstractExpressionPtr;
 
 class CompositeExpression: public AbstractExpression
 {
-    private:
+    protected:
         list<AbstractExpressionPtr> expTree;
     public:
         CompositeExpression(): expTree() {}
 
         virtual ~CompositeExpression() {}
 
-        virtual bool isComposite() {return true;}
-
         virtual void add(AbstractExpressionPtr exp) {expTree.push_back(exp);}
 
         virtual void interpret(Data &data) {
-            for(list<AbstractExpressionPtr>::iterator it=expTree.begin(); it!=expTree.end(); it++) {
-                if((*it)->isComposite()) {
-                    while(data.array[data.ptr])
-                        (*it)->interpret(data);
-                }
-                else {
+            for(list<AbstractExpressionPtr>::iterator it=expTree.begin(); it!=expTree.end(); it++)
+                (*it)->interpret(data);
+        }
+};
+
+class Loop: public CompositeExpression
+{
+    public:
+        virtual void interpret(Data &data) {
+            while(data.array[data.ptr]) {
+                for(list<AbstractExpressionPtr>::iterator it=expTree.begin(); it!=expTree.end(); it++)
                     (*it)->interpret(data);
-                }
             }
         }
 };
@@ -122,8 +122,10 @@ class Parser
             expMap[','] = AbstractExpressionPtr(new Input);
         }
 
-        AbstractExpressionPtr buildTree(const string & code) {
-            AbstractExpressionPtr syntaxTreePtr(new CompositeExpression);
+        AbstractExpressionPtr buildTree(const string & code, bool loop) {
+            AbstractExpressionPtr syntaxTreePtr;
+            if(loop) {syntaxTreePtr.reset(new Loop);}
+            else {syntaxTreePtr.reset(new CompositeExpression);}
             int skip(0);
             for(int i=0; i<code.size(); i++) {
                 if(skip) {
@@ -135,7 +137,7 @@ class Parser
                     syntaxTreePtr->add(expMap[code[i]]);
                 }
                 else if (code[i] == '[') {
-                    AbstractExpressionPtr exp = buildTree(code.substr(i+1));
+                    AbstractExpressionPtr exp = buildTree(code.substr(i+1),true);
                     syntaxTreePtr->add(exp);
                     skip = 1;
                 }
@@ -151,6 +153,6 @@ int main()
     string code("++++++++++[>+++++++>++++++++++>+++>+<<<<-]>++.>+.+++++++..+++.>++.<<+++++++++++++++.>.+++.------.--------.>+.>.");
     //string code(",[.[-],]");
     Parser parser;
-    AbstractExpressionPtr syntaxTreePtr = parser.buildTree(code);
+    AbstractExpressionPtr syntaxTreePtr = parser.buildTree(code,false);
     syntaxTreePtr->interpret(data);
 }
