@@ -112,15 +112,14 @@ class Parser
 {
     private:
         map<char, AbstractExpressionPtr> expMap;
-        list<char> chars;
     public:
         Parser() {
-            chars.push_back('+'); expMap[chars.back()] = AbstractExpressionPtr(new IncrementByte);
-            chars.push_back('-'); expMap[chars.back()] = AbstractExpressionPtr(new DecrementByte);
-            chars.push_back('>'); expMap[chars.back()] = AbstractExpressionPtr(new IncrementPtr);
-            chars.push_back('<'); expMap[chars.back()] = AbstractExpressionPtr(new DecrementPtr);
-            chars.push_back('.'); expMap[chars.back()] = AbstractExpressionPtr(new Output);
-            chars.push_back(','); expMap[chars.back()] = AbstractExpressionPtr(new Input);
+            expMap['+'] = AbstractExpressionPtr(new IncrementByte);
+            expMap['-'] = AbstractExpressionPtr(new DecrementByte);
+            expMap['>'] = AbstractExpressionPtr(new IncrementPtr);
+            expMap['<'] = AbstractExpressionPtr(new DecrementPtr);
+            expMap['.'] = AbstractExpressionPtr(new Output);
+            expMap[','] = AbstractExpressionPtr(new Input);
         }
 
         AbstractExpressionPtr buildTree(const string & code) {
@@ -132,7 +131,7 @@ class Parser
                     if(code[i] == ']') skip--;
                     continue;
                 }
-                if(find(chars.begin(), chars.end(), code[i]) != chars.end()) {
+                if(expMap.find(code[i]) != expMap.end()) {
                     syntaxTreePtr->add(expMap[code[i]]);
                 }
                 else if (code[i] == '[') {
