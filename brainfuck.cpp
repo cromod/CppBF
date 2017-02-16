@@ -6,7 +6,6 @@
 #include <vector>
 #include <map>
 #include <string>
-#include <algorithm>
 #include <memory>
 
 using namespace std;
@@ -20,11 +19,11 @@ struct Data
 class AbstractExpression
 {
     public:
-        AbstractExpression() {}
-        virtual ~AbstractExpression() {}
         virtual void add(shared_ptr<AbstractExpression>) {}
         virtual void interpret(Data &) = 0;
 };
+
+typedef shared_ptr<AbstractExpression> AbstractExpressionPtr;
 
 class IncrementByte: public AbstractExpression
 {
@@ -78,17 +77,11 @@ class Input: public AbstractExpression
         }
 };
 
-typedef shared_ptr<AbstractExpression> AbstractExpressionPtr;
-
 class CompositeExpression: public AbstractExpression
 {
     protected:
         list<AbstractExpressionPtr> expTree;
     public:
-        CompositeExpression(): expTree() {}
-
-        virtual ~CompositeExpression() {}
-
         virtual void add(AbstractExpressionPtr exp) {expTree.push_back(exp);}
 
         virtual void interpret(Data &data) {
@@ -108,41 +101,65 @@ class Loop: public CompositeExpression
         }
 };
 
+class AbstractFactory
+{
+    protected:
+        char last;
+    public:
+        AbstractFactory(char c): last(c) {}
+        virtual AbstractExpressionPtr makeExpression() = 0;
+        char getClosure() {return last;}
+};
+
+typedef shared_ptr<AbstractFactory> AbstractFactoryPtr;
+
+class LoopFactory: public AbstractFactory
+{
+    public:
+        LoopFactory(char c): AbstractFactory(c) {}
+        virtual AbstractExpressionPtr makeExpression() {
+            return AbstractExpressionPtr(new Loop);
+        }
+};
+
 class Parser
 {
     private:
-        map<char, AbstractExpressionPtr> expMap;
+        map<char, AbstractExpressionPtr> terminalMap;
+        map<char, AbstractFactoryPtr> nonTerminalMap;
     public:
         Parser() {
-            expMap['+'] = AbstractExpressionPtr(new IncrementByte);
-            expMap['-'] = AbstractExpressionPtr(new DecrementByte);
-            expMap['>'] = AbstractExpressionPtr(new IncrementPtr);
-            expMap['<'] = AbstractExpressionPtr(new DecrementPtr);
-            expMap['.'] = AbstractExpressionPtr(new Output);
-            expMap[','] = AbstractExpressionPtr(new Input);
+            terminalMap['+'] = AbstractExpressionPtr(new IncrementByte);
+            terminalMap['-'] = AbstractExpressionPtr(new DecrementByte);
+            terminalMap['>'] = AbstractExpressionPtr(new IncrementPtr);
+            terminalMap['<'] = AbstractExpressionPtr(new DecrementPtr);
+            terminalMap['.'] = AbstractExpressionPtr(new Output);
+            terminalMap[','] = AbstractExpressionPtr(new Input);
+            nonTerminalMap['['] = AbstractFactoryPtr(new LoopFactory(']'));
         }
+        
+        AbstractExpressionPtr buildTree(const string & code) {
+            AbstractExpressionPtr syntaxTreePtr(new CompositeExpression);
 
-        AbstractExpressionPtr buildTree(const string & code, bool loop) {
-            AbstractExpressionPtr syntaxTreePtr;
-            if(loop) {syntaxTreePtr.reset(new Loop);}
-            else {syntaxTreePtr.reset(new CompositeExpression);}
-            int skip(0);
+            list<AbstractExpressionPtr> listNode(1, syntaxTreePtr);
+            list<char> closure;
+            
             for(int i=0; i<code.size(); i++) {
-                if(skip) {
-                    if(code[i] == '[') skip++;
-                    if(code[i] == ']') skip--;
-                    continue;
+                if(terminalMap.find(code[i]) != terminalMap.end()) {
+                    listNode.back()->add(terminalMap[code[i]]);
                 }
-                if(expMap.find(code[i]) != expMap.end()) {
-                    syntaxTreePtr->add(expMap[code[i]]);
+                else if(nonTerminalMap.find(code[i]) != nonTerminalMap.end()) {
+                    AbstractExpressionPtr current = nonTerminalMap[code[i]]->makeExpression();
+                    listNode.back()->add(current);
+                    listNode.push_back(current);
+                    closure.push_back(nonTerminalMap[code[i]]->getClosure());
                 }
-                else if (code[i] == '[') {
-                    AbstractExpressionPtr exp = buildTree(code.substr(i+1),true);
-                    syntaxTreePtr->add(exp);
-                    skip = 1;
+                else if(code[i] == closure.back()) {
+                    listNode.pop_back();
+                    closure.pop_back();
                 }
-                else if(code[i]==']') break;
             }
+            
             return syntaxTreePtr;
         }
 };
@@ -153,6 +170,6 @@ int main()
     string code("++++++++++[>+++++++>++++++++++>+++>+<<<<-]>++.>+.+++++++..+++.>++.<<+++++++++++++++.>.+++.------.--------.>+.>.");
     //string code(",[.[-],]");
     Parser parser;
-    AbstractExpressionPtr syntaxTreePtr = parser.buildTree(code,false);
+    AbstractExpressionPtr syntaxTreePtr = parser.buildTree(code);
     syntaxTreePtr->interpret(data);
 }
