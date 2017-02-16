@@ -103,7 +103,7 @@ class Loop: public CompositeExpression
 
 class AbstractFactory
 {
-    protected:
+    private:
         char last;
     public:
         AbstractFactory(char c): last(c) {}
