@@ -18,17 +18,17 @@ AbstractExpressionPtr Parser::buildTree(const std::string & code) {
     list<AbstractExpressionPtr> listNode(1, syntaxTreePtr);
     list<char> closure;
             
-    for(int i=0; i<code.size(); i++) {
-        if(terminalMap.find(code[i]) != terminalMap.end()) {
-            listNode.back()->add(terminalMap[code[i]]);
+    for(char c : code) {
+        if(terminalMap.find(c) != terminalMap.end()) {
+            listNode.back()->add(terminalMap[c]);
         }
-        else if(nonTerminalMap.find(code[i]) != nonTerminalMap.end()) {
-            AbstractExpressionPtr current = nonTerminalMap[code[i]]->makeExpression();
+        else if(nonTerminalMap.find(c) != nonTerminalMap.end()) {
+            AbstractExpressionPtr current = nonTerminalMap[c]->makeExpression();
             listNode.back()->add(current);
             listNode.push_back(current);
-            closure.push_back(nonTerminalMap[code[i]]->getClosure());
+            closure.push_back(nonTerminalMap[c]->getClosure());
         }
-        else if(code[i] == closure.back()) {
+        else if(c == closure.back()) {
             listNode.pop_back();
             closure.pop_back();
         }
