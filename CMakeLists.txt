@@ -11,3 +11,6 @@ set(SRC_FILES src/expression.cpp
               src/main.cpp )
 
 add_executable(brainfuck ${SRC_FILES})
+
+add_custom_command(TARGET brainfuck POST_BUILD
+                  COMMAND ${CMAKE_COMMAND} -E create_symlink ${PROJECT_SOURCE_DIR}/tests tests)
