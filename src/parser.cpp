@@ -9,7 +9,7 @@ Parser::Parser() {
     terminalMap['<'] = AbstractExpressionPtr(new DecrementPtr);
     terminalMap['.'] = AbstractExpressionPtr(new Output);
     terminalMap[','] = AbstractExpressionPtr(new Input);
-    nonTerminalMap['['] = AbstractFactoryPtr(new LoopFactory(']'));
+    nonTerminalMap['['] = AbstractFactoryPtr(new Factory<Loop>(']'));
 }
 
 AbstractExpressionPtr Parser::buildTree(const std::string & code) {
