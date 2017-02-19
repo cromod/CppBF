@@ -16,8 +16,8 @@ int main(int argc, char** argv)
     string code = strStream.str();
 
     Data data; data.array.assign(1,0); data.ptr = 0;
-    Parser parser;
-    AbstractExpressionPtr syntaxTreePtr = parser.buildTree(code);
+    Parser parser(code);
+    AbstractExpressionPtr syntaxTreePtr = parser.makeExpression();
     syntaxTreePtr->interpret(data);
     
     return EXIT_SUCCESS;

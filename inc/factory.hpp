@@ -7,14 +7,9 @@
 
 class AbstractFactory
 {
-    private:
-        char closure;
     public:
-        AbstractFactory(char c): closure(c) {}
-        
         virtual AbstractExpressionPtr makeExpression() = 0;
-        
-        char getClosure() {return closure;}
+        virtual char getClosure() {}
 };
 
 typedef std::shared_ptr<AbstractFactory> AbstractFactoryPtr;
@@ -22,12 +17,16 @@ typedef std::shared_ptr<AbstractFactory> AbstractFactoryPtr;
 template <class Expression>
 class Factory: public AbstractFactory
 {
+    private:
+        char closure;
     public:
-        Factory(char c): AbstractFactory(c) {}
+        Factory(char c): closure(c) {}
         
         virtual AbstractExpressionPtr makeExpression() {
             return AbstractExpressionPtr(new Expression);
         }
+        
+        virtual char getClosure() {return closure;}
 };
 
 #endif //FACTORY_HPP

@@ -2,7 +2,7 @@
 
 using namespace std;
 
-Parser::Parser() {
+Parser::Parser(const std::string & c): code(c) {
     terminalMap['+'] = AbstractExpressionPtr(new IncrementByte);
     terminalMap['-'] = AbstractExpressionPtr(new DecrementByte);
     terminalMap['>'] = AbstractExpressionPtr(new IncrementPtr);
@@ -12,7 +12,7 @@ Parser::Parser() {
     nonTerminalMap['['] = AbstractFactoryPtr(new Factory<Loop>(']'));
 }
 
-AbstractExpressionPtr Parser::buildTree(const std::string & code) {
+AbstractExpressionPtr Parser::makeExpression() {
     AbstractExpressionPtr syntaxTreePtr(new CompositeExpression);
 
     list<AbstractExpressionPtr> listNode(1, syntaxTreePtr);

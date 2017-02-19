@@ -6,15 +6,16 @@
 
 #include "factory.hpp"
 
-class Parser
+class Parser: public AbstractFactory
 {
     private:
         std::map<char, AbstractExpressionPtr> terminalMap;
         std::map<char, AbstractFactoryPtr> nonTerminalMap;
+        std::string code;
     public:
-        Parser();
+        Parser(const std::string & c);
         
-        AbstractExpressionPtr buildTree(const std::string & code);
+        virtual AbstractExpressionPtr makeExpression();
 };
 
 #endif //PARSER_HPP
